@@ -1,0 +1,14 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+
+### OpenAI Chat Completion - Local Foundry
+POST http://localhost:5273/v1/chat/completions
+Content-Type: application/json
+Authorization: Bearer NOT_REQUIRED
+
+{
+  "model": "Phi-4-cuda-gpu",
+  "messages": [
+    { "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user", "content": "Hello!" }
+  ]
+}
