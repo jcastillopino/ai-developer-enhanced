@@ -40,13 +40,13 @@ public partial class Chat
         .UseEmojiAndSmiley()
         .Build();
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync()
     {
         // This is used by Blazor to capture the user input for shortcut keys.
         KeyCodeService.Clear();
         KeyCodeService.RegisterListener(OnKeyDownAsync);
-        // Initialize the chat history here
-        await InitializeSemanticKernel();
+        // We'll initialize the kernel on first message now
+        return Task.CompletedTask;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

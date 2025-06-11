@@ -5,11 +5,14 @@
 
 <PageTitle>Blazor Chat</PageTitle>
 
-<FluentCard Style="display: flex; flex-direction: column">
-    <div class="chat-header">
+<FluentCard Style="display: flex; flex-direction: column">    <div class="chat-header">
         <FluentHeader Style="border-radius: 5px; width: 100%;">
             Chat
             <FluentSpacer />
+            <FluentSelect Value="@(isLocalProvider ? "local" : "remote")" ValueChanged="@OnProviderChanged" TOption="string" Style="width: 150px; margin-right: 10px;">
+                <FluentOption Value="local">Local Provider</FluentOption>
+                <FluentOption Value="remote">Remote Provider</FluentOption>
+            </FluentSelect>
             <FluentButton @onclick="ClearChat" Appearance="Appearance.Neutral" IconStart="@(new Icons.Regular.Size24.ChatSparkle())">New Chat</FluentButton>
         </FluentHeader>
     </div>

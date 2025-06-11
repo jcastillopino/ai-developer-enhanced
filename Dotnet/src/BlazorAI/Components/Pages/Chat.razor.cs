@@ -13,25 +13,42 @@ public partial class Chat
 {
     private ChatHistory? chatHistory;
     private Kernel? kernel;
+    private bool isLocalProvider = true; // Default to local provider
 
     [Inject]
     public required IConfiguration Configuration { get; set; }
     [Inject]
     private ILoggerFactory LoggerFactory { get; set; } = null!;
 
-    protected async Task InitializeSemanticKernel()
+    protected async Task InitializeSemanticKernel(bool useLocalProvider = true)
     {
         chatHistory = [];
-
-        // Challenge 02 - Configure Semantic Kernel
+        isLocalProvider = useLocalProvider;        // Challenge 02 - Configure Semantic Kernel
         var kernelBuilder = Kernel.CreateBuilder();
 
         // Challenge 02 - Add OpenAI Chat Completion
-        kernelBuilder.AddAzureOpenAIChatCompletion(
-            Configuration["AOI_DEPLOYMODEL"]!,
-            Configuration["AOI_ENDPOINT"]!,
-            Configuration["AOI_API_KEY"]!);
+        // Determine the configuration prefix based on provider type
+        string prefix = useLocalProvider ? "LOCALFOUNDRY_" : "AOI_";
 
+        if (useLocalProvider)
+        {
+            // Local Foundry
+            kernelBuilder.AddOpenAIChatCompletion(
+                modelId: Configuration[$"{prefix}DEPLOYMODEL"]!,
+                endpoint: new Uri(Configuration[$"{prefix}ENDPOINT"]!),
+                apiKey: Configuration[$"{prefix}API_KEY"]!
+            );
+        }
+        else
+        {
+            // Remote Azure OpenAI
+            kernelBuilder.AddAzureOpenAIChatCompletion(
+                deploymentName: Configuration[$"{prefix}DEPLOYMODEL"]!,
+                endpoint: Configuration[$"{prefix}ENDPOINT"]!,
+                apiKey: Configuration[$"{prefix}API_KEY"]!
+            );
+        }
+        
         // Add Logger for Kernel
         kernelBuilder.Services.AddSingleton(LoggerFactory);
 
@@ -69,30 +86,62 @@ public partial class Chat
 
         // Challenge 07 - Text To Image Plugin
 
+    }    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(newMessage))
+        {
+            return;
+        }
+
+        // Initialize the kernel if it hasn't been initialized yet
+        if (kernel == null)
+        {
+            await InitializeSemanticKernel(isLocalProvider);
+        }
+
+        if (chatHistory == null)
+        {
+            return;
+        }
+
+        // This tells Blazor the UI is going to be updated.
+        StateHasChanged();
+        loading = true;
+        // Copy the user message to a local variable and clear the newMessage field in the UI
+        var userMessage = newMessage;
+        newMessage = string.Empty;
+
+        // Challenge 02 - Update Chat History
+        chatHistory.AddUserMessage(userMessage);
+
+        // Challenge 02 - Retrieve the chat completion service
+        var chatCompletionService = kernel!.GetRequiredService<IChatCompletionService>();
+        // Challenge 02 - Send a message to the chat completion service
+        var response = await chatCompletionService!.GetChatMessageContentsAsync(
+            chatHistory,
+            kernel: kernel
+        );
+
+        // Challenge 02 - Add Response to the Chat History object
+        chatHistory.AddAssistantMessage(response.FirstOrDefault()?.Content ?? "No response");
+
+        loading = false;
     }
 
-    private async Task SendMessage()
+    private async Task OnProviderChanged(string value)
     {
-        if (!string.IsNullOrWhiteSpace(newMessage) && chatHistory != null)
+        bool newIsLocalProvider = value == "local";
+
+        // Only reinitialize if the provider has changed
+        if (newIsLocalProvider == isLocalProvider)
         {
-            // This tells Blazor the UI is going to be updated.
-            StateHasChanged();
-            loading = true;
-            // Copy the user message to a local variable and clear the newMessage field in the UI
-            var userMessage = newMessage;
-            newMessage = string.Empty;
-            StateHasChanged();
-
-            // Challenge 02 - Retrieve the chat completion service
-
-            // Challenge 02 - Update Chat History
-
-            // Challenge 02 - Send a message to the chat completion service
-
-            // Challenge 02 - Add Response to the Chat History object
-
-
-            loading = false;
+            return;
         }
+        isLocalProvider = newIsLocalProvider;
+        // Clear the chat history when switching providers
+        chatHistory?.Clear();
+        await InitializeSemanticKernel(isLocalProvider);
+        StateHasChanged();
     }
 }
+
