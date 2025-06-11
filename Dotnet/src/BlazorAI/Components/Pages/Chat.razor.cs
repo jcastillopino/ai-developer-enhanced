@@ -1,11 +1,14 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
+using Microsoft.SemanticKernel.Connectors.Ollama;
 
 #pragma warning disable SKEXP0040 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 #pragma warning disable SKEXP0020 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 #pragma warning disable SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 #pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+#pragma warning disable SKEXP0070 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
 namespace BlazorAI.Components.Pages;
 
@@ -13,6 +16,7 @@ public partial class Chat
 {
     private ChatHistory? chatHistory;
     private Kernel? kernel;
+    private OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new();
     private bool isLocalProvider = true; // Default to local provider
 
     [Inject]
@@ -32,12 +36,20 @@ public partial class Chat
 
         if (useLocalProvider)
         {
-            // Local Foundry
-            kernelBuilder.AddOpenAIChatCompletion(
-                modelId: Configuration[$"{prefix}DEPLOYMODEL"]!,
-                endpoint: new Uri(Configuration[$"{prefix}ENDPOINT"]!),
-                apiKey: Configuration[$"{prefix}API_KEY"]!
+            // Ollama in Container
+            var ollamaApiUrl = Configuration["OLLAMA_API_URL"] ?? "http://localhost:11434";
+            kernelBuilder.AddOllamaChatCompletion("llama3.2:3b", new Uri(ollamaApiUrl));
+            chatHistory.AddSystemMessage(
+                "You are a helpful AI assistant. You can answer questions, provide information, and assist with various tasks. " +
+                "If you don't know the answer, you can say 'I don't know'." +
+                "Please use the tools provided when appropriate, do not guess."
             );
+            // Local Foundry
+            // kernelBuilder.AddOpenAIChatCompletion(
+            //     modelId: Configuration[$"{prefix}DEPLOYMODEL"]!,
+            //     endpoint: new Uri(Configuration[$"{prefix}ENDPOINT"]!),
+            //     apiKey: Configuration[$"{prefix}API_KEY"]!
+            // );
         }
         else
         {
@@ -48,7 +60,7 @@ public partial class Chat
                 apiKey: Configuration[$"{prefix}API_KEY"]!
             );
         }
-        
+
         // Add Logger for Kernel
         kernelBuilder.Services.AddSingleton(LoggerFactory);
 
@@ -71,14 +83,17 @@ public partial class Chat
         await AddPlugins();
 
         // Challenge 03 - Create OpenAIPromptExecutionSettings
+        openAIPromptExecutionSettings = new()
+        {
+            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
+        };
 
 
     }
-
-
-    private async Task AddPlugins()
+    private Task AddPlugins()
     {
         // Challenge 03 - Add Time Plugin
+        kernel!.Plugins.AddFromType<Plugins.TimePlugin>("TimePlugin");
 
         // Challenge 04 - Import OpenAPI Spec
 
@@ -86,7 +101,9 @@ public partial class Chat
 
         // Challenge 07 - Text To Image Plugin
 
-    }    private async Task SendMessage()
+        return Task.CompletedTask;
+    }
+    private async Task SendMessage()
     {
         if (string.IsNullOrWhiteSpace(newMessage))
         {
@@ -119,6 +136,7 @@ public partial class Chat
         // Challenge 02 - Send a message to the chat completion service
         var response = await chatCompletionService!.GetChatMessageContentsAsync(
             chatHistory,
+            executionSettings: openAIPromptExecutionSettings,
             kernel: kernel
         );
 
