@@ -2,7 +2,6 @@
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
-using Microsoft.SemanticKernel.Connectors.Ollama;
 
 #pragma warning disable SKEXP0040 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 #pragma warning disable SKEXP0020 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
@@ -18,6 +17,7 @@ public partial class Chat
     private Kernel? kernel;
     private OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new();
     private bool isLocalProvider = true; // Default to local provider
+    private string selectedModel = "llama3.2:3b"; // Default model
 
     [Inject]
     public required IConfiguration Configuration { get; set; }
@@ -34,11 +34,12 @@ public partial class Chat
         // Determine the configuration prefix based on provider type
         string prefix = useLocalProvider ? "LOCALFOUNDRY_" : "AOI_";
 
-        if (useLocalProvider)
+        
+          if (useLocalProvider)
         {
             // Ollama in Container
             var ollamaApiUrl = Configuration["OLLAMA_API_URL"] ?? "http://localhost:11434";
-            kernelBuilder.AddOllamaChatCompletion("llama3.2:3b", new Uri(ollamaApiUrl));
+            kernelBuilder.AddOllamaChatCompletion(selectedModel, new Uri(ollamaApiUrl));
             chatHistory.AddSystemMessage(
                 "You are a helpful AI assistant. You can answer questions, provide information, and assist with various tasks. " +
                 "If you don't know the answer, you can say 'I don't know'." +
@@ -157,6 +158,20 @@ public partial class Chat
         }
         isLocalProvider = newIsLocalProvider;
         // Clear the chat history when switching providers
+        chatHistory?.Clear();
+        await InitializeSemanticKernel(isLocalProvider);
+        StateHasChanged();
+    }
+
+    private async Task OnModelChanged(string value)
+    {
+        // Only reinitialize if the model has changed
+        if (value == selectedModel)
+        {
+            return;
+        }
+        selectedModel = value;
+        // Clear the chat history when switching models
         chatHistory?.Clear();
         await InitializeSemanticKernel(isLocalProvider);
         StateHasChanged();

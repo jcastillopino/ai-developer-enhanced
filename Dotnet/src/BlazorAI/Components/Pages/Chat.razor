@@ -8,11 +8,17 @@
 <FluentCard Style="display: flex; flex-direction: column">    <div class="chat-header">
         <FluentHeader Style="border-radius: 5px; width: 100%;">
             Chat
-            <FluentSpacer />
-            <FluentSelect Value="@(isLocalProvider ? "local" : "remote")" ValueChanged="@OnProviderChanged" TOption="string" Style="width: 150px; margin-right: 10px;">
+            <FluentSpacer />            <FluentSelect Value="@(isLocalProvider ? "local" : "remote")" ValueChanged="@OnProviderChanged" TOption="string" Style="width: 150px; margin-right: 10px;">
                 <FluentOption Value="local">Local Provider</FluentOption>
                 <FluentOption Value="remote">Remote Provider</FluentOption>
             </FluentSelect>
+            @if (isLocalProvider)
+            {
+                <FluentSelect Value="@selectedModel" ValueChanged="@OnModelChanged" TOption="string" Style="width: 150px; margin-right: 10px;">
+                    <FluentOption Value="qwen3:8b">Qwen3 8B</FluentOption>
+                    <FluentOption Value="llama3.2:3b">Llama 3.2 3B</FluentOption>
+                </FluentSelect>
+            }
             <FluentButton @onclick="ClearChat" Appearance="Appearance.Neutral" IconStart="@(new Icons.Regular.Size24.ChatSparkle())">New Chat</FluentButton>
         </FluentHeader>
     </div>
