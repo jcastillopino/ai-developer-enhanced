@@ -7,12 +7,14 @@ class TimePlugin
 {
 
     // Return the current Date Time
-    [KernelFunction("get_current_time")]
+    [KernelFunction("get_current_datetime")]
     [Description("Returns the current date and time.")]
     public DateTime GetCurrentTime()
     {
         return DateTime.Now;
-    }    // Return the Year for a date passed in as a parameter
+    }
+
+    // Return the Year for a date passed in as a parameter
     [KernelFunction("get_year")]
     [Description("Returns the year for a given date. Input must be a valid date string in ISO format (yyyy-MM-dd) or a standard date format.")]
     public int GetYear([Description("The date to get the year for. Use ISO format like '2025-06-11' or standard date format.")] string dateString)

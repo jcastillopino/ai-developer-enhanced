@@ -52,11 +52,11 @@ public partial class Chat
                     // Ollama in Container
                     var ollamaApiUrl = Configuration["OLLAMA_API_URL"] ?? "http://localhost:11434";
                     kernelBuilder.AddOllamaChatCompletion(selectedModel, new Uri(ollamaApiUrl));
-                    chatHistory.AddSystemMessage(
-                        "You are a helpful AI assistant. You can answer questions, provide information, and assist with various tasks. " +
-                        "If you don't know the answer, you can say 'I don't know'." +
-                        "Please use the tools provided when appropriate, do not guess."
-                    );
+                    // chatHistory.AddSystemMessage(
+                    //     "You are a helpful AI assistant." +
+                    //     "You can use different tools, but you have to create a plan and call them one by one so " +
+                    //     "that you can use the result for the next step."
+                    // );
                     break;
 
                 case Provider.Remote:
@@ -125,6 +125,8 @@ public partial class Chat
     {
         // Challenge 03 - Add Time Plugin
         kernel!.Plugins.AddFromType<Plugins.TimePlugin>("TimePlugin");
+        kernel!.Plugins.AddFromObject(new Plugins.GeocodingPlugin(kernel!.Services.GetRequiredService<IHttpClientFactory>(), Configuration), "GeocodingPlugin");
+        kernel!.Plugins.AddFromObject(new Plugins.WeatherPlugin(kernel!.Services.GetRequiredService<IHttpClientFactory>()), "WeatherPlugin");
 
         // Challenge 04 - Import OpenAPI Spec
 
@@ -247,7 +249,7 @@ public partial class Chat
             return;
         }
         selectedProvider = value;
-        
+
         // Initialize model names from configuration if not already set
         if (value == Provider.Remote && string.IsNullOrEmpty(azureModelName))
         {
@@ -257,12 +259,13 @@ public partial class Chat
         {
             githubModelName = Configuration["GITHUB_DEPLOYMODEL"] ?? "";
         }
-        
+
         // Clear the chat history when switching providers
         chatHistory?.Clear();
         await InitializeSemanticKernel();
         StateHasChanged();
-    }    private async Task OnModelChanged(string value)
+    }
+    private async Task OnModelChanged(string value)
     {
         // Only reinitialize if the model has changed
         if (value == selectedModel)
@@ -275,7 +278,7 @@ public partial class Chat
         await InitializeSemanticKernel();
         StateHasChanged();
     }
-    
+
     private async Task OnAzureModelChanged(string value)
     {
         if (value == azureModelName)
@@ -290,7 +293,7 @@ public partial class Chat
             StateHasChanged();
         }
     }
-    
+
     private async Task OnGitHubModelChanged(string value)
     {
         if (value == githubModelName)
@@ -307,7 +310,8 @@ public partial class Chat
     }
 
     private void ClearError()
-    {        errorMessage = string.Empty;
+    {
+        errorMessage = string.Empty;
         StateHasChanged();
     }
 
@@ -320,7 +324,7 @@ public partial class Chat
             "github" => Provider.GitHub,
             _ => Provider.Local
         };
-        
+
         await OnProviderChanged(newProvider);
     }
 }
