@@ -3,19 +3,23 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
-#pragma warning disable SKEXP0040 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-#pragma warning disable SKEXP0020 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-#pragma warning disable SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-#pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 #pragma warning disable SKEXP0070 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
 namespace BlazorAI.Components.Pages;
 
+public enum Provider
+{
+    Local,
+    Remote,
+    GitHub
+}
+
 public partial class Chat
 {
     private ChatHistory? chatHistory;
-    private Kernel? kernel;    private OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new();
-    private string selectedProvider = "local"; // Default to local provider (local, remote, github)
+    private Kernel? kernel;
+    private OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new();
+    private Provider selectedProvider = Provider.Local; // Default to local provider
     private string selectedModel = "llama3.2:3b"; // Default model for ollama
     private string azureModelName = string.Empty; // Model name for Azure OpenAI
     private string githubModelName = string.Empty; // Model name for GitHub
@@ -24,16 +28,17 @@ public partial class Chat
     [Inject]
     public required IConfiguration Configuration { get; set; }
     [Inject]
-    private ILoggerFactory LoggerFactory { get; set; } = null!;    protected async Task InitializeSemanticKernel(string? provider = null)
+    private ILoggerFactory LoggerFactory { get; set; } = null!;
+    protected async Task InitializeSemanticKernel(Provider? provider = null)
     {
         chatHistory = [];
-        
+
         // Use provided provider or current selected provider
-        string currentProvider = provider ?? selectedProvider;
-        
+        Provider currentProvider = provider ?? selectedProvider;
+
         // Clear any previous error messages
         errorMessage = string.Empty;
-        
+
         // Challenge 02 - Configure Semantic Kernel
         var kernelBuilder = Kernel.CreateBuilder();
 
@@ -43,7 +48,7 @@ public partial class Chat
             // Determine the configuration prefix based on provider type
             switch (currentProvider)
             {
-                case "local":
+                case Provider.Local:
                     // Ollama in Container
                     var ollamaApiUrl = Configuration["OLLAMA_API_URL"] ?? "http://localhost:11434";
                     kernelBuilder.AddOllamaChatCompletion(selectedModel, new Uri(ollamaApiUrl));
@@ -53,31 +58,31 @@ public partial class Chat
                         "Please use the tools provided when appropriate, do not guess."
                     );
                     break;
-                    
-                case "remote":
+
+                case Provider.Remote:
                     // Remote Azure OpenAI
-                    string azureModelToUse = !string.IsNullOrEmpty(azureModelName) ? azureModelName : 
+                    string azureModelToUse = !string.IsNullOrEmpty(azureModelName) ? azureModelName :
                         Configuration["AOI_DEPLOYMODEL"] ?? throw new InvalidOperationException("Azure OpenAI model configuration is missing");
-                    
+
                     kernelBuilder.AddAzureOpenAIChatCompletion(
                         deploymentName: azureModelToUse,
                         endpoint: Configuration["AOI_ENDPOINT"] ?? throw new InvalidOperationException("Azure OpenAI endpoint configuration is missing"),
                         apiKey: Configuration["AOI_API_KEY"] ?? throw new InvalidOperationException("Azure OpenAI API key configuration is missing")
                     );
                     break;
-                    
-                case "github":
+
+                case Provider.GitHub:
                     // GitHub Models
-                    string githubModelToUse = !string.IsNullOrEmpty(githubModelName) ? githubModelName : 
+                    string githubModelToUse = !string.IsNullOrEmpty(githubModelName) ? githubModelName :
                         Configuration["GITHUB_DEPLOYMODEL"] ?? throw new InvalidOperationException("GitHub model configuration is missing");
-                    
+
                     kernelBuilder.AddOpenAIChatCompletion(
                         modelId: githubModelToUse,
                         endpoint: new Uri(Configuration["GITHUB_ENDPOINT"] ?? throw new InvalidOperationException("GitHub endpoint configuration is missing")),
                         apiKey: Configuration["GITHUB_API_KEY"] ?? throw new InvalidOperationException("GitHub API key configuration is missing")
                     );
                     break;
-                    
+
                 default:
                     throw new ArgumentException($"Unknown provider: {currentProvider}");
             }
@@ -234,7 +239,7 @@ public partial class Chat
             StateHasChanged();
         }
     }
-    private async Task OnProviderChanged(string value)
+    private async Task OnProviderChanged(Provider value)
     {
         // Only reinitialize if the provider has changed
         if (value == selectedProvider)
@@ -244,11 +249,11 @@ public partial class Chat
         selectedProvider = value;
         
         // Initialize model names from configuration if not already set
-        if (value == "remote" && string.IsNullOrEmpty(azureModelName))
+        if (value == Provider.Remote && string.IsNullOrEmpty(azureModelName))
         {
             azureModelName = Configuration["AOI_DEPLOYMODEL"] ?? "";
         }
-        else if (value == "github" && string.IsNullOrEmpty(githubModelName))
+        else if (value == Provider.GitHub && string.IsNullOrEmpty(githubModelName))
         {
             githubModelName = Configuration["GITHUB_DEPLOYMODEL"] ?? "";
         }
@@ -278,7 +283,7 @@ public partial class Chat
             return;
         }
         azureModelName = value;
-        if (selectedProvider == "remote")
+        if (selectedProvider == Provider.Remote)
         {
             chatHistory?.Clear();
             await InitializeSemanticKernel();
@@ -292,7 +297,8 @@ public partial class Chat
         {
             return;
         }
-        githubModelName = value;        if (selectedProvider == "github")
+        githubModelName = value;
+        if (selectedProvider == Provider.GitHub)
         {
             chatHistory?.Clear();
             await InitializeSemanticKernel();
@@ -301,9 +307,21 @@ public partial class Chat
     }
 
     private void ClearError()
-    {
-        errorMessage = string.Empty;
+    {        errorMessage = string.Empty;
         StateHasChanged();
+    }
+
+    private async Task OnProviderStringChanged(string value)
+    {
+        Provider newProvider = value switch
+        {
+            "local" => Provider.Local,
+            "remote" => Provider.Remote,
+            "github" => Provider.GitHub,
+            _ => Provider.Local
+        };
+        
+        await OnProviderChanged(newProvider);
     }
 }
 

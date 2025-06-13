@@ -8,23 +8,23 @@
 <FluentCard Style="display: flex; flex-direction: column">    <div class="chat-header">
         <FluentHeader Style="border-radius: 5px; width: 100%;">            Chat
             <FluentSpacer />            
-            <FluentSelect Value="@selectedProvider" ValueChanged="@OnProviderChanged" TOption="string" Style="width: 180px; margin-right: 10px;">
+            <FluentSelect Value="@selectedProvider.ToString().ToLower()" ValueChanged="@OnProviderStringChanged" TOption="string" Style="width: 180px; margin-right: 10px;">
                 <FluentOption Value="local">ollama Models (local)</FluentOption>
                 <FluentOption Value="remote">Azure OpenAI Models</FluentOption>
                 <FluentOption Value="github">GitHub Models</FluentOption>
             </FluentSelect>
-            @if (selectedProvider == "local")
+            @if (selectedProvider == Provider.Local)
             {
                 <FluentSelect Value="@selectedModel" ValueChanged="@OnModelChanged" TOption="string" Style="width: 150px; margin-right: 10px;">
                     <FluentOption Value="qwen3:8b">Qwen3 8B</FluentOption>
                     <FluentOption Value="llama3.2:3b">Llama 3.2 3B</FluentOption>
                 </FluentSelect>
             }
-            @if (selectedProvider == "remote")
+            @if (selectedProvider == Provider.Remote)
             {
                 <FluentTextField Value="@azureModelName" ValueChanged="@OnAzureModelChanged" Placeholder="Azure OpenAI Model" Style="width: 200px; margin-right: 10px;" />
             }
-            @if (selectedProvider == "github")
+            @if (selectedProvider == Provider.GitHub)
             {
                 <FluentTextField Value="@githubModelName" ValueChanged="@OnGitHubModelChanged" Placeholder="GitHub Model" Style="width: 200px; margin-right: 10px;" />
             }
