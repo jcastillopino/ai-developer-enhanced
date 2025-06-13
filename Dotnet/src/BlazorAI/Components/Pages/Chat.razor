@@ -6,22 +6,49 @@
 <PageTitle>Blazor Chat</PageTitle>
 
 <FluentCard Style="display: flex; flex-direction: column">    <div class="chat-header">
-        <FluentHeader Style="border-radius: 5px; width: 100%;">
-            Chat
-            <FluentSpacer />            <FluentSelect Value="@(isLocalProvider ? "local" : "remote")" ValueChanged="@OnProviderChanged" TOption="string" Style="width: 150px; margin-right: 10px;">
-                <FluentOption Value="local">Local Provider</FluentOption>
-                <FluentOption Value="remote">Remote Provider</FluentOption>
+        <FluentHeader Style="border-radius: 5px; width: 100%;">            Chat
+            <FluentSpacer />            
+            <FluentSelect Value="@selectedProvider" ValueChanged="@OnProviderChanged" TOption="string" Style="width: 180px; margin-right: 10px;">
+                <FluentOption Value="local">ollama Models (local)</FluentOption>
+                <FluentOption Value="remote">Azure OpenAI Models</FluentOption>
+                <FluentOption Value="github">GitHub Models</FluentOption>
             </FluentSelect>
-            @if (isLocalProvider)
+            @if (selectedProvider == "local")
             {
                 <FluentSelect Value="@selectedModel" ValueChanged="@OnModelChanged" TOption="string" Style="width: 150px; margin-right: 10px;">
                     <FluentOption Value="qwen3:8b">Qwen3 8B</FluentOption>
                     <FluentOption Value="llama3.2:3b">Llama 3.2 3B</FluentOption>
                 </FluentSelect>
             }
+            @if (selectedProvider == "remote")
+            {
+                <FluentTextField Value="@azureModelName" ValueChanged="@OnAzureModelChanged" Placeholder="Azure OpenAI Model" Style="width: 200px; margin-right: 10px;" />
+            }
+            @if (selectedProvider == "github")
+            {
+                <FluentTextField Value="@githubModelName" ValueChanged="@OnGitHubModelChanged" Placeholder="GitHub Model" Style="width: 200px; margin-right: 10px;" />
+            }
             <FluentButton @onclick="ClearChat" Appearance="Appearance.Neutral" IconStart="@(new Icons.Regular.Size24.ChatSparkle())">New Chat</FluentButton>
         </FluentHeader>
-    </div>
+    </div>    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="error-message" style="background-color: #ffebee; color: #c62828; padding: 15px; margin: 10px; border-left: 4px solid #c62828; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.ErrorCircle())" Style="color: #c62828;" />
+                    <div>
+                        <strong>Error:</strong> @errorMessage
+                    </div>
+                </div>
+                <FluentButton Appearance="Appearance.Lightweight" 
+                              IconStart="@(new Icons.Regular.Size16.Dismiss())" 
+                              @onclick="@(() => errorMessage = string.Empty)"
+                              Style="color: #c62828;"
+                              title="Dismiss error">
+                </FluentButton>
+            </div>
+        </div>
+    }
     <div class="chat-messages">
         @if (chatHistory != null && chatHistory.Any())
         {
@@ -62,10 +89,9 @@
         <FluentStack Orientation="Orientation.Horizontal" Width="100%" HorizontalGap="8">
             <FluentTextArea @ref="inputTextArea" Immediate="true" ImmediateDelay="15" @bind-Value="MessageInput"
                             placeholder="Type a message..." Rows="2" Appearance=FluentInputAppearance.Filled
-                            Class="chat-input-area" />
-            <FluentButton @ref="submitButton" Loading="@loading" @onclick="SendMessage"
+                            Class="chat-input-area" />            <FluentButton @ref="submitButton" Loading="@loading" @onclick="SendMessage"
                           IconStart="@(new Icons.Regular.Size20.Send())" Appearance="Appearance.Lightweight"
-                          Class="send-button">Send</FluentButton>
+                          Class="send-button" Disabled="@(!string.IsNullOrEmpty(errorMessage) || loading || string.IsNullOrWhiteSpace(MessageInput))">Send</FluentButton>
         </FluentStack>
     </div>
 </FluentCard>
