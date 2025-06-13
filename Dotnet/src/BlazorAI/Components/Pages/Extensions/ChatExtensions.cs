@@ -18,14 +18,11 @@ public partial class Chat
     private const int MAX_ROWS = 6;
     private string newMessage = string.Empty;
     private int textRows = 0;
-    bool loading = false;
-    private FluentButton submitButton;
-    private FluentTextArea inputTextArea;
+    bool loading = false;    private FluentButton submitButton = null!;
+    private FluentTextArea inputTextArea = null!;
     private int messagesLastScroll = 0;
-    private bool displayToolMessages = false;
-
-    [Inject]
-    private IKeyCodeService KeyCodeService { get; set; }
+    private bool displayToolMessages = false;    [Inject]
+    private IKeyCodeService KeyCodeService { get; set; } = null!;
 
     [Inject]
     IJSRuntime JsRuntime { get; set; } = null!;
@@ -38,13 +35,16 @@ public partial class Chat
         .UseAdvancedExtensions()
         .UseBootstrap()
         .UseEmojiAndSmiley()
-        .Build();
-
-    protected override Task OnInitializedAsync()
+        .Build();    protected override Task OnInitializedAsync()
     {
         // This is used by Blazor to capture the user input for shortcut keys.
         KeyCodeService.Clear();
         KeyCodeService.RegisterListener(OnKeyDownAsync);
+        
+        // Initialize model names from configuration
+        azureModelName = Configuration["AOI_DEPLOYMODEL"] ?? "";
+        githubModelName = Configuration["GITHUB_DEPLOYMODEL"] ?? "";
+        
         // We'll initialize the kernel on first message now
         return Task.CompletedTask;
     }
