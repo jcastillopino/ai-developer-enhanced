@@ -121,7 +121,7 @@ public partial class Chat
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
         };
     }
-    private Task AddPlugins()
+    private async Task AddPlugins()
     {
         // Challenge 03 - Add Time Plugin
         kernel!.Plugins.AddFromType<Plugins.TimePlugin>("TimePlugin");
@@ -129,12 +129,17 @@ public partial class Chat
         kernel!.Plugins.AddFromObject(new Plugins.WeatherPlugin(kernel!.Services.GetRequiredService<IHttpClientFactory>()), "WeatherPlugin");
 
         // Challenge 04 - Import OpenAPI Spec
+        var openApiUrl = new Uri(new Uri(Configuration["WORKITEMS_BASE_URL"]!), Configuration["OPEN_API_DOC_ROUTE"]);
+        await kernel!.ImportPluginFromOpenApiAsync(
+            pluginName: "WorkItemsAPI",
+            uri: openApiUrl
+        );
 
         // Challenge 05 - Add Search Plugin
 
         // Challenge 07 - Text To Image Plugin
 
-        return Task.CompletedTask;
+        return;
     }
     private async Task SendMessage()
     {
