@@ -72,7 +72,26 @@
                         <div class="message-content">
                             @if (!string.IsNullOrEmpty(message.Content))
                             {
-                                @((MarkupString)Markdig.Markdown.ToHtml(message.Content, pipeline))
+                                var content = message.Content;
+                                var thinkStart = content.IndexOf("<think>", StringComparison.OrdinalIgnoreCase);
+                                var thinkEnd = content.IndexOf("</think>", StringComparison.OrdinalIgnoreCase);
+                                if (thinkStart != -1 && thinkEnd != -1 && thinkEnd > thinkStart)
+                                {
+                                    var thinkContent = content.Substring(thinkStart + 7, thinkEnd - (thinkStart + 7)).Trim();
+                                    var afterThink = content.Substring(thinkEnd + 8).Trim();
+                                    <div style="background: #f5f5f5; border-left: 4px solid #bdbdbd; padding: 12px; margin-bottom: 10px; font-style: italic; color: #555; border-radius: 4px;">
+                                        <span style="font-weight: bold; color: #888;">Thought</span><br />
+                                        @thinkContent
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(afterThink))
+                                    {
+                                        @((MarkupString)Markdig.Markdown.ToHtml(afterThink, pipeline))
+                                    }
+                                }
+                                else
+                                {
+                                    @((MarkupString)Markdig.Markdown.ToHtml(content, pipeline))
+                                }
                             }
                         </div>
                     </div>
