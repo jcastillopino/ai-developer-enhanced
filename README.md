@@ -6,6 +6,8 @@
 
 This repository contains my personal exploration and implementation of the AI Developer workshop materials, focusing on Azure AI Foundry and Semantic Kernel fundamentals. It includes solutions and experiments across multiple programming languages including C#, Python, and Java.
 
+Check out [Stable Code Branch](https://github.com/jcastillopino/ai-developer-enhanced/tree/Stable-Code) for an stable version. I'm actively testing in main 😊
+
 ## Original Workshop Content
 
 This workshop consists of eight challenges designed to encourage learning and research in AI development. If you want a deeper understanding of how to implement an AI solution but have little or no experience with OpenAI or Semantic Kernel, these challenges provide an excellent foundation.
