@@ -2,6 +2,8 @@
 
 *A personal learning journey through Azure AI Foundry and Semantic Kernel fundamentals*
 
+Read an article about the work in this repo: [Prototyping Smarter with Aspire, Ollama & GitHub Models](https://code-smarter.com/prototyping-smarter-with-aspire-ollama-and-github-models)
+
 ## About This Repository
 
 This repository contains my personal exploration and implementation of the AI Developer workshop materials, focusing on Azure AI Foundry and Semantic Kernel fundamentals. It includes solutions and experiments across multiple programming languages including C#, Python, and Java.
